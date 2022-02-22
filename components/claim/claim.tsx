@@ -1,8 +1,9 @@
-import React, { FC, FormEventHandler, useState, useEffect } from 'react';
+import React, { FC, useState, useEffect, useRef } from 'react';
 import { Block, Box } from '@lidofinance/lido-ui';
 import { useContractSWR, useSDK } from '@lido-sdk/react';
+import { useWeb3 } from '@lido-sdk/web3-react';
 import notify from 'utils/notify';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import SubmitOrConnect from 'components/submitOrConnect';
 import FormatToken from 'components/formatToken/formatToken';
 import {
@@ -38,6 +39,7 @@ const initialStatus = {
   link: '',
   type: '',
   show: false,
+  retry: false,
 };
 
 const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
@@ -47,6 +49,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
   const maticTokenWeb3 = useMaticTokenWeb3();
   const stakeManagerWeb3 = useStakeManagerWeb3();
   const stakeManagerRPC = useStakeManagerRPC();
+  const { active } = useWeb3();
   const [delay, setDelay] = useState(0);
 
   const [status, setStatus] = useState(initialStatus);
@@ -57,6 +60,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
   const [pendingAmount, setPendingAmount] = useState(BigNumber.from(0));
   const [symbol, setSymbol] = useState('MATIC');
   const [claimAmount, setClaimAmount] = useState('0');
+  const invalidClaims = useRef<ContractTransaction[]>();
 
   const fetchTokens = async () => {
     if (lidoMaticWeb3 && tokenOwned && tokenApproved) {
@@ -132,6 +136,15 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     .filter((id) => id !== '0');
 
   useEffect(() => {
+    if (active) {
+      fetchTokens();
+    } else {
+      setClaimableAmount(BigNumber.from(0));
+      setPendingAmount(BigNumber.from(0));
+    }
+  }, [active]);
+
+  useEffect(() => {
     if (maticTokenWeb3) {
       maticTokenWeb3.symbol().then((res) => {
         setSymbol(res);
@@ -163,9 +176,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     setClaimAmount(claimAmount);
   }, [JSON.stringify(tokens)]);
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> | undefined = async (
-    e: any,
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (lidoMaticWeb3 && tokens.length) {
       setIsLoading(true);
@@ -176,6 +187,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         type: 'loading',
         link: '',
         show: true,
+        retry: false,
       });
       const tokenIds = tokens.reduce((acc, token) => {
         if (token.checked) {
@@ -187,31 +199,46 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         const claims = await Promise.all(
           tokenIds.map((tokenId) => lidoMaticWeb3.claimTokens(tokenId)),
         );
-        const results = await Promise.all(claims.map((claim) => claim.wait()));
-        const finalRes = results.reduce(
-          (acc, { status }) => {
-            if (status) {
-              acc.success += 1;
-            } else {
-              acc.failed += 1;
-            }
-            return acc;
-          },
-          {
-            success: 0,
-            failed: 0,
-          },
+        setStatus({
+          title: 'You are now claiming your reward',
+          subtitle: `Claiming ${claimAmount} ${symbol}`,
+          additionalDetails: 'Processing your transaction',
+          type: 'loading',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        let results;
+        if (invalidClaims.current?.length) {
+          results = await Promise.all(
+            invalidClaims.current.map((claim) =>
+              claim.wait().catch((ex) => ex),
+            ),
+          );
+        } else {
+          results = await Promise.all(
+            claims.map((claim) => claim.wait().catch((ex) => ex)),
+          );
+          invalidClaims.current = [];
+        }
+        const validResults = results.filter((result) => result.status);
+        invalidClaims.current = claims.slice(
+          validResults.length,
+          claims.length - 1,
         );
+
         await fetchTokens();
         setIsLoading(false);
-        if (finalRes.failed > 0) {
+        if (invalidClaims.current.length) {
           setStatus({
-            title: 'Failed to claim rewards',
+            title: 'Some rewards failed to claim',
             subtitle: `Something went wrong`,
-            additionalDetails: '',
+            additionalDetails:
+              'If you would like to claim again missing rewards please click retry',
             type: 'error',
             link: '',
             show: true,
+            retry: true,
           });
         } else {
           setStatus({
@@ -221,6 +248,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
             type: 'success',
             link: '',
             show: true,
+            retry: false,
           });
         }
         setIsLoading(false);
@@ -234,6 +262,12 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
       }
     }
   };
+  const handleShowSelectModal = (): void => {
+    if (claimableAmount.gt(0)) {
+      setShowSelectModal(true);
+    }
+  };
+
   return (
     <Block>
       <Box
@@ -248,7 +282,10 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         been processed. To unstake your amount go to
         {
           // eslint-disable-next-line
-          <span style={{ color: '#00A3FF', cursor: 'pointer' }} onClick={() => changeTab("UNSTAKE")}>
+          <span
+            style={{ color: '#00A3FF', cursor: 'pointer' }}
+            onClick={() => changeTab('UNSTAKE')}
+          >
             {' Unstake '}
           </span>
         }
@@ -269,14 +306,18 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
             value={<FormatToken amount={pendingAmount} symbol={symbol} />}
           />
         </ClaimStat>
-        <ClaimCardEdit onClick={() => setShowSelectModal(true)}>
+        <ClaimCardEdit
+          onClick={handleShowSelectModal}
+          disabled={claimableAmount.eq(0)}
+        >
           Edit reward claims
         </ClaimCardEdit>
       </ClaimCard>
       <SubmitOrConnect
-        label={`Claim ${claimAmount} ${symbol}`}
-        isLoading={false}
+        submitLabel={`Claim ${claimAmount} ${symbol}`}
+        isSubmitting={false}
         submit={handleSubmit}
+        disabledSubmit={claimAmount === '0.0'}
       />
       <SelectTokenModal
         tokens={tokens}
@@ -292,6 +333,8 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         type={status.type}
         show={status.show}
         onClose={() => setStatus(initialStatus)}
+        retry={status.retry}
+        onRetry={handleSubmit}
       />
     </Block>
   );

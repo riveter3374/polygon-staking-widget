@@ -8,7 +8,7 @@ export const ClaimCardStyle = styled.div`
 
 export const ClaimStatStyle = styled.div`
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   background-color: #f5f7fa;
   border-radius: 10px;
   padding: 20px;
@@ -21,6 +21,7 @@ export const ClaimStatBalanceStyle = styled.div`
   margin-right: 18px;
   font-size: ${({ theme }) => theme.fontSizesMap.xxs}px;
   line-height: 1.6em;
+  width: 50%;
 
   :last-child {
     margin-right: 0;
@@ -42,11 +43,15 @@ export const ClaimStatValueStyle = styled.div<{
   color: #273852;
 `;
 
-export const ClaimCardEditStyle = styled.div`
-  color: #00a3ff;
+export const ClaimCardEditStyle = styled.div<{ disabled?: boolean }>`
   text-align: center;
   padding: 12px 0;
-  cursor: pointer;
+  cursor: ${({ disabled }) => {
+    return disabled ? `not-allowed` : `pointer`;
+  }};
+  color: ${({ disabled }) => {
+    return disabled ? `#ade1ff` : `#00a3ff`;
+  }};
 `;
 
 export const ClaimCardExtraStyle = styled.div`

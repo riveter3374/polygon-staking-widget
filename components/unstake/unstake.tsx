@@ -1,4 +1,4 @@
-import React, { FC, FormEventHandler, useState, useEffect } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import {
   Block,
   Input,
@@ -8,15 +8,29 @@ import {
   Box,
 } from '@lidofinance/lido-ui';
 import InputWrapper from 'components/inputWrapper';
-import { useLidoMaticWeb3, useMaticTokenWeb3, useStakeManagerRPC } from 'hooks';
+import {
+  useLidoMaticRPC,
+  useLidoMaticWeb3,
+  useMaticTokenWeb3,
+  useStakeManagerRPC,
+} from 'hooks';
 import notify from 'utils/notify';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import SubmitOrConnect from 'components/submitOrConnect';
 import StatusModal from 'components/statusModal';
 import { StMatic } from 'components/tokens';
 import { SCANNERS } from 'config';
 import { useContractSWR, useSDK } from '@lido-sdk/react';
 import { formatBalance } from 'utils';
+
+type StatusProps = {
+  step: string;
+  amount?: string;
+  reason?: string;
+  stAmount?: BigNumber;
+  transactionHash?: string;
+  retry?: boolean;
+};
 
 const initialStatus = {
   title: '',
@@ -25,6 +39,7 @@ const initialStatus = {
   link: '',
   type: '',
   show: false,
+  retry: false,
 };
 
 const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
@@ -32,10 +47,14 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
   const lidoMaticWeb3 = useLidoMaticWeb3();
   const maticTokenWeb3 = useMaticTokenWeb3();
   const stakeManagerRPC = useStakeManagerRPC();
+  const stMaticTokenRPC = useLidoMaticRPC();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canApprove, setCanApprove] = useState(false);
+  const [canUnstake, setCanUnstake] = useState(false);
   const [status, setStatus] = useState(initialStatus);
-  const [amount, setAmount] = useState('');
+  const [enteredAmount, setEnteredAmount] = useState('');
   const [symbol, setSymbol] = useState('MATIC');
   const [rate, setRate] = useState('0');
   const [stSymbol, setStSymbol] = useState('stMATIC');
@@ -46,11 +65,141 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     method: 'withdrawalDelay',
   });
 
+  const stMaticBalance = useContractSWR({
+    contract: stMaticTokenRPC,
+    method: 'balanceOf',
+    params: [account],
+  });
+
+  const checkAllowance = (amount: string) => {
+    if (lidoMaticWeb3 && maticTokenWeb3 && account && +amount) {
+      lidoMaticWeb3.allowance(account, lidoMaticWeb3.address).then((res) => {
+        const parsedAmount = utils.parseUnits(amount, 'ether');
+        if (res.gte(parsedAmount)) {
+          setCanApprove(false);
+          setCanUnstake(true);
+        } else {
+          setCanApprove(true);
+          setCanUnstake(false);
+        }
+      });
+    }
+  };
+
   const setMaxInputValue = () => {
     if (account) {
-      lidoMaticWeb3?.balanceOf(account).then((res) => {
-        setAmount(utils.formatEther(res));
+      lidoMaticWeb3?.balanceOf(account).then((max) => {
+        setEnteredAmount(utils.formatEther(max));
+        if (lidoMaticWeb3 && max.gt(0)) {
+          lidoMaticWeb3.convertStMaticToMatic(max).then(([res]) => {
+            setReward(formatBalance(res));
+          });
+        } else {
+          setReward('0');
+        }
+        checkAllowance(utils.formatEther(max));
       });
+    }
+  };
+
+  const setStatusData = ({
+    amount,
+    step,
+    transactionHash,
+    retry,
+    reason,
+  }: StatusProps) => {
+    switch (step) {
+      case 'approve':
+        setStatus({
+          title: `You are now approving ${stSymbol}`,
+          subtitle: `Approving ${amount} ${stSymbol}.`,
+          additionalDetails: 'Confirm this transaction in your wallet',
+          type: 'loading',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'approve-processing':
+        setStatus({
+          title: `You are now approving ${stSymbol}`,
+          subtitle: `Approving ${amount} ${stSymbol}.`,
+          additionalDetails: 'Processing your transaction',
+          type: 'loading',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'approved-already':
+        setStatus({
+          title: `${amount} ${stSymbol} already approved`,
+          subtitle: '',
+          additionalDetails: 'Processing your transaction',
+          type: 'success',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'approve-success':
+        setStatus({
+          title: `${amount} ${stSymbol} approved`,
+          subtitle: '',
+          additionalDetails: '',
+          type: 'success',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'confirm':
+        setStatus({
+          title: `You are now launching unstake`,
+          subtitle: `Unstake ${amount} ${symbol}.`,
+          additionalDetails: 'Confirm this transaction in your wallet',
+          type: 'loading',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'processing':
+        setStatus({
+          title: `You are now unstaking ${symbol}`,
+          subtitle: `Unstake ${amount} ${symbol}`,
+          additionalDetails: 'Processing your transaction',
+          type: 'loading',
+          link: '',
+          show: true,
+          retry: false,
+        });
+        break;
+      case 'failed':
+        setStatus({
+          title: `Transaction Failed`,
+          subtitle: reason || 'Something went wrong',
+          additionalDetails: '',
+          type: 'error',
+          link: transactionHash
+            ? `${SCANNERS[chainId]}tx/${transactionHash}`
+            : '',
+          show: true,
+          retry: retry || false,
+        });
+        break;
+      default:
+        setStatus({
+          title: `Transaction created`,
+          subtitle: `Your ${amount} ${stSymbol} will be unstaked.`,
+          additionalDetails: '',
+          type: 'success',
+          link: `${SCANNERS[chainId]}tx/${transactionHash}`,
+          show: true,
+          retry: false,
+        });
+        break;
     }
   };
 
@@ -77,77 +226,128 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     }
   }, [maticTokenWeb3]);
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> | undefined = async (
-    e: any,
-  ) => {
-    e.preventDefault();
-    const amount = e.target[0].value;
-    if (amount && amount !== '0' && lidoMaticWeb3) {
-      setIsLoading(true);
-      setStatus({
-        title: 'You are now launching unstake',
-        subtitle: `Unstake ${amount} ${symbol}.`,
-        additionalDetails: 'Confirm this transaction in your wallet',
-        type: 'loading',
-        link: '',
-        show: true,
-      });
-      try {
-        const stMaticAmount = utils.parseUnits(amount, 'ether');
-        await lidoMaticWeb3.approve(lidoMaticWeb3.address, stMaticAmount);
-        const unstake = await lidoMaticWeb3.requestWithdraw(stMaticAmount);
-        const { status, transactionHash } = await unstake.wait();
-        if (status) {
-          setAmount('0');
-          setStatus({
-            title: `Transaction created`,
-            subtitle: `Your ${amount} ${symbol} will be unstaked.`,
-            additionalDetails: '',
-            type: 'success',
-            link: `${SCANNERS[chainId]}tx/${transactionHash}`,
-            show: true,
-          });
-        } else {
-          setStatus({
-            title: `Transaction Failed`,
-            subtitle: `Something went wrong`,
-            additionalDetails: '',
-            type: 'error',
-            link: transactionHash
-              ? `${SCANNERS[chainId]}tx/${transactionHash}`
-              : '',
-            show: true,
+  const handleApprove = async () => {
+    if (enteredAmount && enteredAmount !== '0' && lidoMaticWeb3) {
+      if (!stMaticBalance.data) return;
+      const currentlyStaked = +utils.formatEther(stMaticBalance.data);
+      if (+enteredAmount > currentlyStaked) {
+        notify('Entered amount bigger than staked amount', 'error');
+        return;
+      }
+      setIsApproving(true);
+      const stMaticAmount = utils.parseUnits(enteredAmount, 'ether');
+
+      if (account && lidoMaticWeb3.address) {
+        try {
+          const alreadyApproved = await lidoMaticWeb3.allowance(
+            account,
+            lidoMaticWeb3.address,
+          );
+          if (alreadyApproved.lt(stMaticAmount)) {
+            setStatusData({
+              amount: enteredAmount,
+              step: 'approve',
+            });
+            const approval = await lidoMaticWeb3.approve(
+              lidoMaticWeb3.address,
+              stMaticAmount,
+            );
+            setStatusData({
+              amount: enteredAmount,
+              step: 'approve-processing',
+            });
+            const { status: approvalStatus, transactionHash } =
+              await approval.wait();
+            if (approvalStatus) {
+              setStatusData({
+                amount: enteredAmount,
+                step: 'approve-success',
+              });
+              setCanApprove(false);
+              setCanUnstake(true);
+            } else {
+              setStatusData({ transactionHash, step: 'failed', retry: true });
+            }
+            setIsApproving(false);
+          } else {
+            setStatusData({ amount: enteredAmount, step: 'approved-already' });
+            setCanApprove(false);
+            setCanUnstake(true);
+          }
+        } catch (ex) {
+          setStatusData({
+            step: 'failed',
+            retry: true,
           });
         }
-        setIsLoading(false);
+      }
+    } else {
+      notify('Please enter the amount', 'error');
+    }
+    setIsApproving(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (enteredAmount && enteredAmount !== '0' && lidoMaticWeb3) {
+      if (!stMaticBalance.data) return;
+      const currentlyStaked = +utils.formatEther(stMaticBalance.data);
+      if (+enteredAmount > currentlyStaked) {
+        notify('Entered amount bigger than staked amount', 'error');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        const stMaticAmount = utils.parseUnits(enteredAmount, 'ether');
+        setStatusData({ amount: enteredAmount, step: 'confirm' });
+        const unstake = await lidoMaticWeb3.requestWithdraw(stMaticAmount);
+        setStatusData({ amount: enteredAmount, step: 'processing' });
+        const { status, transactionHash } = await unstake.wait();
+        if (status) {
+          setEnteredAmount('');
+          setStatusData({
+            amount: enteredAmount,
+            transactionHash,
+            step: 'success',
+          });
+          setCanUnstake(false);
+          setCanApprove(false);
+        } else {
+          setStatusData({ transactionHash, step: 'failed', retry: true });
+        }
+        setIsSubmitting(false);
       } catch (ex) {
-        setStatus({
-          title: `Transaction Failed`,
-          subtitle: `Something went wrong`,
-          additionalDetails: '',
-          type: 'error',
-          link: '',
-          show: true,
+        setStatusData({
+          step: 'failed',
+          reason: ex.message.replace('MetaMask Tx Signature: ', ''),
+          retry: true,
         });
-        setIsLoading(false);
+        setIsSubmitting(false);
       }
     } else {
       notify('Please enter the amount', 'error');
     }
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const amount = e.target.value;
-    setAmount(amount);
-    if (isNaN(amount) || Number(amount) <= 0) {
+    if (isNaN(+amount) || /^00/.test(amount) || +amount < 0) {
+      return;
+    }
+    if (+amount === 0) {
       setReward('0');
-    } else if (lidoMaticWeb3 && amount > 0) {
+      setCanApprove(false);
+      setCanUnstake(false);
+    } else if (lidoMaticWeb3 && +amount > 0) {
       lidoMaticWeb3
         .convertStMaticToMatic(utils.parseUnits(amount, 'ether'))
         .then(([res]) => {
           setReward(formatBalance(res));
         });
+      checkAllowance(amount);
     }
+
+    setEnteredAmount(amount);
   };
 
   return (
@@ -165,13 +365,16 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         claim your rewards in
         {
           // eslint-disable-next-line
-          <span style={{ color: '#00A3FF', cursor: 'pointer' }} onClick={() => changeTab("CLAIM")}>
+          <span
+            style={{ color: '#00A3FF', cursor: 'pointer' }}
+            onClick={() => changeTab('CLAIM')}
+          >
             {' Claim '}
           </span>
         }
         tab
       </Box>
-      <form action="" method="post" onSubmit={handleSubmit}>
+      <form action="" method="post">
         <InputWrapper>
           <Input
             fullwidth={true}
@@ -190,11 +393,21 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
               </Button>
             }
             label="Amount"
-            value={amount}
-            disabled={isLoading}
+            value={enteredAmount}
+            disabled={isSubmitting || isApproving}
           />
         </InputWrapper>
-        <SubmitOrConnect isLoading={isLoading} label="Start unstaking"/>
+        <SubmitOrConnect
+          isUnlocking={isApproving}
+          isSubmitting={isSubmitting}
+          unlock={handleApprove}
+          unlockLabel="Unlock tokens"
+          submitLabel="Unstake"
+          submit={handleSubmit}
+          fullwidth={false}
+          disabledSubmit={!canUnstake}
+          disabledUnlock={!canApprove}
+        />
       </form>
       <DataTable>
         <DataTableRow title="You will recieve">
@@ -211,7 +424,9 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         link={status.link}
         type={status.type}
         show={status.show}
+        retry={status.retry}
         onClose={() => setStatus(initialStatus)}
+        onRetry={handleSubmit}
       />
     </Block>
   );

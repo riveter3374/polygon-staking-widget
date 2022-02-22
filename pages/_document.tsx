@@ -42,8 +42,8 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          <meta charSet="utf-8" />
           <link rel="manifest" href="/manifest.json" />
-          <link rel="icon" type="image/svg+xml" href="favicon-512x512.svg" />
           <link
             rel="apple-touch-icon"
             sizes="180x180"

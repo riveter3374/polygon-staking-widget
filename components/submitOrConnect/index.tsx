@@ -7,28 +7,56 @@ import styled from 'styled-components';
 const ButtonWrapper = styled.div`
   margin-top: ${({ theme }) => theme.spaceMap.md}px;
   margin-bottom: ${({ theme }) => theme.spaceMap.xxl}px;
+  display: flex;
 `;
 
 interface Props {
-  isLoading: boolean;
-  label: string;
+  unlockLabel?: string;
+  submitLabel: string;
+  disabledUnlock?: boolean;
+  disabledSubmit?: boolean;
+  isSubmitting: boolean;
+  isUnlocking?: boolean;
+  fullwidth?: boolean;
   submit?: (e: any) => void;
+  unlock?: (e: any) => void;
 }
 
-const SubmitOrConnect: FC<Props> = ({ isLoading, label, submit }) => {
+const SubmitOrConnect: FC<Props> = ({
+  unlockLabel,
+  submitLabel,
+  submit,
+  disabledUnlock,
+  disabledSubmit,
+  isUnlocking,
+  isSubmitting,
+  unlock,
+}) => {
   const { account } = useSDK();
   return (
     <ButtonWrapper>
       {account ? (
-        <Button
-          fullwidth
-          type="submit"
-          disabled={isLoading}
-          loading={isLoading}
-          onClick={submit}
-        >
-          {label}
-        </Button>
+        <>
+          {unlock ? (
+            <Button
+              onClick={unlock}
+              disabled={disabledUnlock || isUnlocking}
+              loading={isUnlocking}
+              style={{ marginRight: '15px', flexGrow: 1 }}
+            >
+              {unlockLabel}
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            disabled={isSubmitting || disabledSubmit}
+            loading={isSubmitting}
+            onClick={submit}
+            style={{ flexGrow: 1 }}
+          >
+            {submitLabel}
+          </Button>
+        </>
       ) : (
         <WalletConnect fullwidth />
       )}

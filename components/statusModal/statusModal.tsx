@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import React, { FC } from 'react';
 import {
   Text,
   Modal,
@@ -15,7 +15,9 @@ interface Props {
   link: string;
   type: string;
   show: boolean;
+  retry: boolean;
   onClose: () => void;
+  onRetry?: (e: any) => void;
 }
 
 const statusModal: FC<Props> = ({
@@ -25,7 +27,9 @@ const statusModal: FC<Props> = ({
   link,
   type,
   show,
+  retry,
   onClose,
+  onRetry,
 }) => {
   return (
     <Modal
@@ -37,9 +41,9 @@ const statusModal: FC<Props> = ({
         type === 'loading' ? (
           <Loader size="large" />
         ) : type === 'error' ? (
-          <Error color="red" height={64} width={64} />
+          <Error color="#E14D4D" height={64} width={64} />
         ) : (
-          <Success color="green" height={64} width={64} />
+          <Success color="#53BA95" height={64} width={64} />
         )
       }
     >
@@ -54,6 +58,7 @@ const statusModal: FC<Props> = ({
         </Text>
       ) : null}
       {link ? <Link href={link}>View on Etherscan</Link> : null}
+      {retry ? <Link onClick={onRetry}>Retry</Link> : null}
     </Modal>
   );
 };
