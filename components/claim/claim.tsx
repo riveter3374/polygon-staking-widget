@@ -187,7 +187,7 @@ const Claim: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         type: 'loading',
         link: '',
         show: true,
-        retry: true,
+        retry: false,
       });
       const tokenIds = tokens.reduce((acc, token) => {
         if (token.checked) {
