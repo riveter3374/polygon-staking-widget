@@ -57,4 +57,7 @@ module.exports = {
     hardCapLimit,
     ethplorerMainnetUrl,
   },
+  images: {
+    loader: 'custom',
+  },
 };
