@@ -30,9 +30,12 @@ export default async function handler(
 
   const {
     price: { rate },
-    holdersCount,
   } = await fetch(
     `${ethplorerMainnetUrl}getTokenInfo/${maticAddress}?apiKey=${process.env.ETHPLORER_MAINNET_API_KEY}`,
+  ).then((res) => res.json());
+
+  const { holdersCount } = await fetch(
+    `${ethplorerMainnetUrl}getTokenInfo/${lidoMaticAddress}?apiKey=${process.env.ETHPLORER_MAINNET_API_KEY}`,
   ).then((res) => res.json());
 
   const totalPooledMatic = await contract.getTotalPooledMatic();
