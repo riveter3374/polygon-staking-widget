@@ -337,8 +337,7 @@ const Stake: FC = () => {
 
       if (hardCapLimit.current) {
         lidoMaticWeb3.getTotalPooledMatic().then((res) => {
-          const value =
-            (Number(utils.formatEther(res)) * maticUsd.current);
+          const value = Number(utils.formatEther(res)) * maticUsd.current;
           if (+hardCapLimit.current <= Number(utils.formatEther(res))) {
             setCanUnlock(false);
             setCanStake(false);
