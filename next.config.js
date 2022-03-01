@@ -4,6 +4,7 @@ const basePath = process.env.BASE_PATH || '';
 const infuraApiKey = process.env.INFURA_API_KEY;
 const ethplorerMainnetUrl = process.env.ETHPLORER_MAINNET_URL;
 const hardCapLimit = process.env.HARD_CAP_LIMIT;
+const maticUsd = process.env.MATIC_USD;
 const alchemyApiKey = process.env.ALCHEMY_API_KEY;
 const apiProviderUrls = {
   [CHAINS.Mainnet]: process.env[`API_PROVIDER_URL_${CHAINS.Mainnet}`],
@@ -55,6 +56,7 @@ module.exports = {
     defaultChain,
     supportedChains,
     hardCapLimit,
+    maticUsd,
     ethplorerMainnetUrl,
   },
   images: {

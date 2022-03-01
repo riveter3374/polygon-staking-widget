@@ -114,7 +114,7 @@ const InputRightDecorator: FC<InputRightDecoratorProps> = ({
               <TotalStake>
                 <span>Total stake capacity: </span>
                 <span>{`$${formatCash(currentlyStakedAmount)} / $${formatCash(
-                  10000000,
+                  1000000,
                 )} (${currentStakeCapacityPercentage.toFixed(2)}%)`}</span>
               </TotalStake>
               <ProgressBar completed={currentStakeCapacityPercentage} />
