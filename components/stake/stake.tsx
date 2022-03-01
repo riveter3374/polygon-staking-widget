@@ -55,7 +55,8 @@ const Stake: FC = () => {
   const [totalPooledMatic, setTotalPooledMatic] = useState<number>(0);
   const [currentStakeCapacityPercentage, setCurrentStakeCapacityPercentage] =
     useState<number>(0);
-  const hardCapLimit = useRef(+publicRuntimeConfig.hardCapLimit * 2);
+  const hardCapLimit = useRef(+publicRuntimeConfig.hardCapLimit);
+  const maticUsd = useRef(+publicRuntimeConfig.maticUsd);
 
   const checkAllowance = (amount: string) => {
     if (lidoMaticWeb3 && maticTokenWeb3 && account && +amount) {
@@ -337,14 +338,14 @@ const Stake: FC = () => {
       if (hardCapLimit.current) {
         lidoMaticWeb3.getTotalPooledMatic().then((res) => {
           const value =
-            (Number(utils.formatEther(res)) * hardCapLimit.current) / 10000000;
-          if (+hardCapLimit.current < +value) {
+            (Number(utils.formatEther(res)) * maticUsd.current);
+          if (+hardCapLimit.current <= Number(utils.formatEther(res))) {
             setCanUnlock(false);
             setCanStake(false);
           }
           setTotalPooledMatic(value);
           setCurrentStakeCapacityPercentage(
-            (value / +hardCapLimit.current) * 100,
+            (Number(utils.formatEther(res)) / +hardCapLimit.current) * 100,
           );
         });
       }
