@@ -45,7 +45,7 @@ const Stake: FC = () => {
   const [enteredAmount, setEnteredAmount] = useState('');
   const [symbol, setSymbol] = useState('MATIC');
   const [reward, setReward] = useState('0');
-  const [rate, setRate] = useState('0');
+  const [rate, setRate] = useState('1');
   const [stSymbol, setStSymbol] = useState('stMATIC');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

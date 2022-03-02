@@ -16,7 +16,7 @@ export const useErrorMessage = (): string | undefined => {
   }, [supportedChains]);
 
   if (isUnsupported) {
-    return `Unsupported chain. Please switch to ${chains} in your wallet`;
+    return `Unsupported chain. Polygon staking and Lido contracts are deployed on Ethereum. Please switch to ${chains} in your wallet`;
   }
 
   return error?.message;
