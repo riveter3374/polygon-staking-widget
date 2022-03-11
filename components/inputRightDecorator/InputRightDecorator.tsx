@@ -104,7 +104,7 @@ const InputRightDecorator: FC<InputRightDecoratorProps> = ({
                 function will be disabled until the limit is removed. For more
                 information please{' '}
                 <a
-                  href="https://news.shardlabs.io/lido-for-polygon-launch-plan-f08a5163619b"
+                  href="https://news.shardlabs.io/its-launch-time-lido-for-polygon-5fe4ebe92fcc"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
