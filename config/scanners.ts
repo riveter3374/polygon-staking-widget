@@ -8,4 +8,5 @@ export const SCANNERS: {
   [CHAINS.Rinkeby]: 'https://rinkeby.etherscan.io/',
   [CHAINS.Goerli]: 'https://goerli.etherscan.io/',
   [CHAINS.Kovan]: 'https://kovan.etherscan.io/',
+  [CHAINS.Kintsugi]: 'https://explorer.kintsugi.themerge.dev/'
 };
