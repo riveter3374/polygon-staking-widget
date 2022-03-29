@@ -28,7 +28,9 @@ export const ClaimStatBalanceStyle = styled.div`
   }
 `;
 
-export const ClaimCardTitleStyle = styled.div``;
+export const ClaimCardTitleStyle = styled.div`
+  color: #7a8aa0;
+`;
 
 export const ClaimStatValueStyle = styled.div<{
   $small: boolean;
