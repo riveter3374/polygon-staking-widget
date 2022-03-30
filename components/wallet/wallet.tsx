@@ -4,7 +4,7 @@ import {
   WalletCardRow,
   WalletCardAccount,
 } from 'components/walletCard';
-import { Divider } from '@lidofinance/lido-ui';
+import { Divider, Text } from '@lidofinance/lido-ui';
 import { useContractSWR, useSDK } from '@lido-sdk/react';
 import { useWeb3 } from '@lido-sdk/web3-react';
 import FormatToken from 'components/formatToken';
@@ -75,10 +75,16 @@ const Wallet: WalletComponent = (props) => {
               />
             </>
           }
+          extra={
+            <>
+              <FormatToken
+                amount={stMaticBalance.data} // TODO : replace with converted value from stMATIC to MATIC
+                symbol={maticSymbol}
+                approx
+              />
+            </>
+          }
         />
-        {/* 
-        TODO: Add after historical data can be fetched
-        
         <WalletCardBalance
           small
           title="Lido APR"
@@ -86,11 +92,11 @@ const Wallet: WalletComponent = (props) => {
           value={
             <>
               <Text style={{ color: '#53BA95' }} size="xs">
-                40%
+                40% {/* TODO: replace hardcoded value */}
               </Text>
             </>
           }
-        /> */}
+        />
       </WalletCardRow>
     </WalletCard>
   );
