@@ -36,6 +36,16 @@ const Wallet: WalletComponent = (props) => {
   const [maticEquiv, setMaticEquiv] = useState<BigNumber>();
   const [maticSymbol, setMaticSymbol] = useState('MATIC');
   const [stMaticSymbol, setStMaticSymbol] = useState('stMATIC');
+  const [apr, setApr] = useState();
+
+  useEffect(() => {
+    fetch('api/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        setApr(data.apr);
+      });
+  }, []);
+
   useEffect(() => {
     if (maticTokenWeb3) {
       maticTokenWeb3.symbol().then((res) => {
@@ -96,11 +106,11 @@ const Wallet: WalletComponent = (props) => {
         <WalletCardBalance
           small
           title="Lido APR"
-          loading={maticBalance.initialLoading}
+          loading={!apr}
           value={
             <>
               <Text style={{ color: '#53BA95' }} size="xs">
-                8.676% {/* TODO: replace hardcoded value */}
+                {`${apr}%`}
               </Text>
             </>
           }

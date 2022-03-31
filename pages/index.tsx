@@ -1,6 +1,12 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
-import { Block, Link, DataTable, DataTableRow } from '@lidofinance/lido-ui';
+import {
+  Block,
+  Link,
+  DataTable,
+  DataTableRow,
+  Text,
+} from '@lidofinance/lido-ui';
 import Tabs from 'components/tabs';
 import Wallet from 'components/wallet';
 import Section from 'components/section';
@@ -26,12 +32,26 @@ const Home: FC<HomeProps> = ({ faqList }) => {
   const [selectedTab, setSelectedTab] = useState('STAKE');
   const [symbol, setSymbol] = useState('MATIC');
 
+  const [stakers, setStakers] = useState();
+  const [apr, setApr] = useState();
+  const [marketCap, setMarketCap] = useState();
+
   maticTokenWeb3?.symbol().then(setSymbol);
 
   const totalTokenStaked = useContractSWR({
     contract: lidoMaticRPC,
     method: 'getTotalPooledMatic',
   });
+
+  useEffect(() => {
+    fetch('api/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        setStakers(data.stakers);
+        setApr(data.apr);
+        setMarketCap(data.totalStaked.usd);
+      });
+  }, []);
 
   return (
     <Layout
@@ -61,8 +81,10 @@ const Home: FC<HomeProps> = ({ faqList }) => {
       >
         <Block>
           <DataTable title="Lido">
-            <DataTableRow title="Annual percentage rate">
-              40.5% {/* TODO: replace hardcoded value */}
+            <DataTableRow title="Annual percentage rate" loading={!apr}>
+              <Text style={{ color: '#53BA95' }} size="xs">
+                {`${apr}%`}
+              </Text>
             </DataTableRow>
             <DataTableRow
               title="Total staked with Lido"
@@ -71,18 +93,15 @@ const Home: FC<HomeProps> = ({ faqList }) => {
               {formatBalance(totalTokenStaked.data)} {symbol}
             </DataTableRow>
 
-            <DataTableRow
-              title="Stakers"
-              // loading={tokenName.initialLoading}
-            >
-              99 999 {/* TODO: replace hardcoded value */}
+            <DataTableRow title="Stakers" loading={!stakers}>
+              {stakers}
             </DataTableRow>
 
             <DataTableRow
               title="stMATIC market cap"
-              // loading={tokenName.initialLoading}
+              loading={!marketCap}
             >
-              $9,999,999,999 {/* TODO: replace hardcoded value */}
+              {`\$${marketCap}`}
             </DataTableRow>
           </DataTable>
         </Block>
