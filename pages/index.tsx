@@ -97,11 +97,8 @@ const Home: FC<HomeProps> = ({ faqList }) => {
               {stakers}
             </DataTableRow>
 
-            <DataTableRow
-              title="stMATIC market cap"
-              loading={!marketCap}
-            >
-              {`\$${marketCap}`}
+            <DataTableRow title="stMATIC market cap" loading={!marketCap}>
+              {`$${marketCap}`}
             </DataTableRow>
           </DataTable>
         </Block>
