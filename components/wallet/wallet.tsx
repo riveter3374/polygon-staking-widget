@@ -8,6 +8,8 @@ import { Divider, Text } from '@lidofinance/lido-ui';
 import { useContractSWR, useSDK } from '@lido-sdk/react';
 import { useWeb3 } from '@lido-sdk/web3-react';
 import FormatToken from 'components/formatToken';
+import { utils, BigNumber } from 'ethers';
+import { formatBalance } from 'utils';
 import FallbackWallet from 'components/fallbackWallet';
 import { WalletComponent } from './types';
 import {
@@ -30,6 +32,8 @@ const Wallet: WalletComponent = (props) => {
     method: 'balanceOf',
     params: [account],
   });
+
+  const [maticEquiv, setMaticEquiv] = useState<BigNumber>();
   const [maticSymbol, setMaticSymbol] = useState('MATIC');
   const [stMaticSymbol, setStMaticSymbol] = useState('stMATIC');
   useEffect(() => {
@@ -41,6 +45,14 @@ const Wallet: WalletComponent = (props) => {
     if (stMaticTokenWeb3) {
       stMaticTokenWeb3.symbol().then((res) => {
         setStMaticSymbol(res);
+      });
+
+      const amount = utils.parseUnits(
+        formatBalance(maticBalance.data),
+        'ether',
+      );
+      stMaticTokenWeb3.convertStMaticToMatic(amount).then(([res]) => {
+        setMaticEquiv(res);
       });
     }
   }, [maticTokenWeb3, stMaticTokenWeb3]);
@@ -77,11 +89,7 @@ const Wallet: WalletComponent = (props) => {
           }
           extra={
             <>
-              <FormatToken
-                amount={stMaticBalance.data} // TODO : replace with converted value from stMATIC to MATIC
-                symbol={maticSymbol}
-                approx
-              />
+              <FormatToken amount={maticEquiv} symbol={maticSymbol} approx />
             </>
           }
         />
@@ -92,7 +100,7 @@ const Wallet: WalletComponent = (props) => {
           value={
             <>
               <Text style={{ color: '#53BA95' }} size="xs">
-                40% {/* TODO: replace hardcoded value */}
+                8.676% {/* TODO: replace hardcoded value */}
               </Text>
             </>
           }
