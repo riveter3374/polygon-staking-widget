@@ -33,6 +33,12 @@ const Wallet: WalletComponent = (props) => {
     params: [account],
   });
 
+  const stMaticBalance = useContractSWR({
+    contract: stMaticTokenRPC,
+    method: 'balanceOf',
+    params: [account],
+  });
+
   const [maticEquiv, setMaticEquiv] = useState<BigNumber>();
   const [maticSymbol, setMaticSymbol] = useState('MATIC');
   const [stMaticSymbol, setStMaticSymbol] = useState('stMATIC');
@@ -58,19 +64,15 @@ const Wallet: WalletComponent = (props) => {
       });
 
       const amount = utils.parseUnits(
-        formatBalance(maticBalance.data),
+        formatBalance(stMaticBalance.data),
         'ether',
       );
       stMaticTokenWeb3.convertStMaticToMatic(amount).then(([res]) => {
         setMaticEquiv(res);
       });
     }
-  }, [maticTokenWeb3, stMaticTokenWeb3]);
-  const stMaticBalance = useContractSWR({
-    contract: stMaticTokenRPC,
-    method: 'balanceOf',
-    params: [account],
-  });
+  }, [maticTokenWeb3, stMaticTokenWeb3, stMaticBalance.data]);
+
   return (
     <WalletCard {...props}>
       <WalletCardRow>
