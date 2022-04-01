@@ -414,7 +414,7 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
           {reward} {symbol}
         </DataTableRow>
         <DataTableRow title="Exchange rate">
-          1 {symbol} = {rate} {stSymbol}
+          1 {stSymbol} = {rate} {symbol}
         </DataTableRow>
       </DataTable>
       <StatusModal
