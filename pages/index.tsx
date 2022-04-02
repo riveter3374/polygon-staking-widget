@@ -34,7 +34,7 @@ const Home: FC<HomeProps> = ({ faqList }) => {
 
   const [stakers, setStakers] = useState();
   const [apr, setApr] = useState();
-  const [marketCap, setMarketCap] = useState();
+  const [price, setPrice] = useState(0);
 
   maticTokenWeb3?.symbol().then(setSymbol);
 
@@ -49,7 +49,7 @@ const Home: FC<HomeProps> = ({ faqList }) => {
       .then((data) => {
         setStakers(data.stakers);
         setApr(data.apr);
-        setMarketCap(data.totalStaked.usd);
+        setPrice(data.price);
       });
   }, []);
 
@@ -94,11 +94,14 @@ const Home: FC<HomeProps> = ({ faqList }) => {
             </DataTableRow>
 
             <DataTableRow title="Stakers" loading={!stakers}>
-              {stakers}
+              {chainId != 1 ? 'TBD' : stakers}
             </DataTableRow>
 
-            <DataTableRow title="stMATIC market cap" loading={!marketCap}>
-              {`$${marketCap}`}
+            <DataTableRow
+              title="stMATIC market cap"
+              loading={totalTokenStaked.initialLoading && price !== 0}
+            >
+              {`$ ${Number(formatBalance(totalTokenStaked.data)) * price}`}
             </DataTableRow>
           </DataTable>
         </Block>
