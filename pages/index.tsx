@@ -1,6 +1,12 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
-import { Block, Link, DataTable, DataTableRow } from '@lidofinance/lido-ui';
+import {
+  Block,
+  Link,
+  DataTable,
+  DataTableRow,
+  Text,
+} from '@lidofinance/lido-ui';
 import Tabs from 'components/tabs';
 import Wallet from 'components/wallet';
 import Section from 'components/section';
@@ -26,12 +32,26 @@ const Home: FC<HomeProps> = ({ faqList }) => {
   const [selectedTab, setSelectedTab] = useState('STAKE');
   const [symbol, setSymbol] = useState('MATIC');
 
+  const [stakers, setStakers] = useState();
+  const [apr, setApr] = useState();
+  const [price, setPrice] = useState(0);
+
   maticTokenWeb3?.symbol().then(setSymbol);
 
   const totalTokenStaked = useContractSWR({
     contract: lidoMaticRPC,
     method: 'getTotalPooledMatic',
   });
+
+  useEffect(() => {
+    fetch('api/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        setStakers(data.stakers);
+        setApr(data.apr);
+        setPrice(data.price);
+      });
+  }, []);
 
   return (
     <Layout
@@ -61,28 +81,28 @@ const Home: FC<HomeProps> = ({ faqList }) => {
       >
         <Block>
           <DataTable title="Lido">
-            {/*
-              TODO: Add after historical data can be fetched
-              <DataTableRow title="Annual percentage rate">40.5%</DataTableRow>
-             */}
+            <DataTableRow title="Annual percentage rate" loading={!apr}>
+              <Text style={{ color: '#53BA95' }} size="xs">
+                {`${apr}%`}
+              </Text>
+            </DataTableRow>
             <DataTableRow
               title="Total staked with Lido"
               loading={totalTokenStaked.initialLoading}
             >
               {formatBalance(totalTokenStaked.data)} {symbol}
             </DataTableRow>
-            {/* 
-             TODO: uncomment after getting api key for etherscan
-            <DataTableRow title="Stakers" loading={tokenName.initialLoading}>
-              99 999
+
+            <DataTableRow title="Stakers" loading={!stakers}>
+              {chainId != 1 ? 'TBD' : stakers}
             </DataTableRow>
-             */}
-            {/* <DataTableRow
+
+            <DataTableRow
               title="stMATIC market cap"
-              loading={tokenName.initialLoading}
+              loading={totalTokenStaked.initialLoading && price !== 0}
             >
-              $9,999,999,999
-            </DataTableRow> */}
+              {`$ ${Number(formatBalance(totalTokenStaked.data)) * price}`}
+            </DataTableRow>
           </DataTable>
         </Block>
       </Section>
