@@ -93,6 +93,7 @@ const Home: FC<HomeProps> = ({ faqList }) => {
             >
               {currency(formatBalance(totalTokenStaked.data), {
                 symbol: '',
+                precision: 3,
               }).format()}{' '}
               {symbol}
             </DataTableRow>
@@ -105,9 +106,9 @@ const Home: FC<HomeProps> = ({ faqList }) => {
               title="stMATIC market cap"
               loading={totalTokenStaked.initialLoading && price !== 0}
             >
-              {currency(
-                Number(formatBalance(totalTokenStaked.data)) * price,
-              ).format()}
+              {currency(Number(formatBalance(totalTokenStaked.data)) * price, {
+                precision: 0,
+              }).format()}
             </DataTableRow>
           </DataTable>
         </Block>
