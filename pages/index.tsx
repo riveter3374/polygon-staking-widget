@@ -20,6 +20,7 @@ import Unstake from 'components/unstake';
 import Claim from 'components/claim';
 import { formatBalance } from 'utils';
 import { SCANNERS, LIDO_MATIC_BY_NETWORK } from 'config';
+import currency from 'currency.js';
 
 interface HomeProps {
   faqList: FAQItem[];
@@ -90,7 +91,10 @@ const Home: FC<HomeProps> = ({ faqList }) => {
               title="Total staked with Lido"
               loading={totalTokenStaked.initialLoading}
             >
-              {formatBalance(totalTokenStaked.data)} {symbol}
+              {currency(formatBalance(totalTokenStaked.data), {
+                symbol: '',
+              }).format()}{' '}
+              {symbol}
             </DataTableRow>
 
             <DataTableRow title="Stakers" loading={!stakers}>
@@ -101,7 +105,9 @@ const Home: FC<HomeProps> = ({ faqList }) => {
               title="stMATIC market cap"
               loading={totalTokenStaked.initialLoading && price !== 0}
             >
-              {`$ ${Number(formatBalance(totalTokenStaked.data)) * price}`}
+              {currency(
+                Number(formatBalance(totalTokenStaked.data)) * price,
+              ).format()}
             </DataTableRow>
           </DataTable>
         </Block>
