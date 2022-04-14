@@ -360,7 +360,7 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         margin="0 auto 16px auto"
         color="#273852"
       >
-        Default stMATIC unstaking period takes around 9 days (
+        Default stMATIC unstaking period takes around 2-3 days (
         {delay.data?.toString() || 80} epochs) to process. After that you can
         claim your rewards in
         {
