@@ -7,7 +7,7 @@ import time
 
 
 # timeout to wait for triggered job to be created (not finished)
-JOB_WAIT_TIMEOUT = 300
+JOB_WAIT_TIMEOUT = 600
 JOB_TIMEOUT = 6000  # timeout to wait fo job to finish
 
 
