@@ -49,9 +49,9 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
   const stakeManagerRPC = useStakeManagerRPC();
   const stMaticTokenRPC = useLidoMaticRPC();
 
-  const [isApproving, setIsApproving] = useState(false);
+  // const [isApproving, setIsApproving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [canApprove, setCanApprove] = useState(false);
+  // const [canApprove, setCanApprove] = useState(false);
   const [canUnstake, setCanUnstake] = useState(false);
   const [status, setStatus] = useState(initialStatus);
   const [enteredAmount, setEnteredAmount] = useState('');
@@ -71,15 +71,13 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     params: [account],
   });
 
-  const checkAllowance = (amount: string) => {
+  const checkBalance = (amount: string) => {
     if (lidoMaticWeb3 && maticTokenWeb3 && account && +amount) {
-      lidoMaticWeb3.allowance(account, lidoMaticWeb3.address).then((res) => {
+      lidoMaticWeb3.balanceOf(account).then((res) => {
         const parsedAmount = utils.parseUnits(amount, 'ether');
         if (res.gte(parsedAmount)) {
-          setCanApprove(false);
           setCanUnstake(true);
         } else {
-          setCanApprove(true);
           setCanUnstake(false);
         }
       });
@@ -97,7 +95,7 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         } else {
           setReward('0');
         }
-        checkAllowance(utils.formatEther(max));
+        checkBalance(utils.formatEther(max));
       });
     }
   };
@@ -226,66 +224,66 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     }
   }, [maticTokenWeb3]);
 
-  const handleApprove = async () => {
-    if (enteredAmount && enteredAmount !== '0' && lidoMaticWeb3) {
-      if (!stMaticBalance.data) return;
-      const currentlyStaked = +utils.formatEther(stMaticBalance.data);
-      if (+enteredAmount > currentlyStaked) {
-        notify('Entered amount bigger than staked amount', 'error');
-        return;
-      }
-      setIsApproving(true);
-      const stMaticAmount = utils.parseUnits(enteredAmount, 'ether');
+  // const handleApprove = async () => {
+  //   if (enteredAmount && enteredAmount !== '0' && lidoMaticWeb3) {
+  //     if (!stMaticBalance.data) return;
+  //     const currentlyStaked = +utils.formatEther(stMaticBalance.data);
+  //     if (+enteredAmount > currentlyStaked) {
+  //       notify('Entered amount bigger than staked amount', 'error');
+  //       return;
+  //     }
+  //     setIsApproving(true);
+  //     const stMaticAmount = utils.parseUnits(enteredAmount, 'ether');
 
-      if (account && lidoMaticWeb3.address) {
-        try {
-          const alreadyApproved = await lidoMaticWeb3.allowance(
-            account,
-            lidoMaticWeb3.address,
-          );
-          if (alreadyApproved.lt(stMaticAmount)) {
-            setStatusData({
-              amount: enteredAmount,
-              step: 'approve',
-            });
-            const approval = await lidoMaticWeb3.approve(
-              lidoMaticWeb3.address,
-              stMaticAmount,
-            );
-            setStatusData({
-              amount: enteredAmount,
-              step: 'approve-processing',
-            });
-            const { status: approvalStatus, transactionHash } =
-              await approval.wait();
-            if (approvalStatus) {
-              setStatusData({
-                amount: enteredAmount,
-                step: 'approve-success',
-              });
-              setCanApprove(false);
-              setCanUnstake(true);
-            } else {
-              setStatusData({ transactionHash, step: 'failed', retry: true });
-            }
-            setIsApproving(false);
-          } else {
-            setStatusData({ amount: enteredAmount, step: 'approved-already' });
-            setCanApprove(false);
-            setCanUnstake(true);
-          }
-        } catch (ex) {
-          setStatusData({
-            step: 'failed',
-            retry: true,
-          });
-        }
-      }
-    } else {
-      notify('Please enter the amount', 'error');
-    }
-    setIsApproving(false);
-  };
+  //     if (account && lidoMaticWeb3.address) {
+  //       try {
+  //         const alreadyApproved = await lidoMaticWeb3.allowance(
+  //           account,
+  //           lidoMaticWeb3.address,
+  //         );
+  //         if (alreadyApproved.lt(stMaticAmount)) {
+  //           setStatusData({
+  //             amount: enteredAmount,
+  //             step: 'approve',
+  //           });
+  //           const approval = await lidoMaticWeb3.approve(
+  //             lidoMaticWeb3.address,
+  //             stMaticAmount,
+  //           );
+  //           setStatusData({
+  //             amount: enteredAmount,
+  //             step: 'approve-processing',
+  //           });
+  //           const { status: approvalStatus, transactionHash } =
+  //             await approval.wait();
+  //           if (approvalStatus) {
+  //             setStatusData({
+  //               amount: enteredAmount,
+  //               step: 'approve-success',
+  //             });
+  //             setCanApprove(false);
+  //             setCanUnstake(true);
+  //           } else {
+  //             setStatusData({ transactionHash, step: 'failed', retry: true });
+  //           }
+  //           setIsApproving(false);
+  //         } else {
+  //           setStatusData({ amount: enteredAmount, step: 'approved-already' });
+  //           setCanApprove(false);
+  //           setCanUnstake(true);
+  //         }
+  //       } catch (ex) {
+  //         setStatusData({
+  //           step: 'failed',
+  //           retry: true,
+  //         });
+  //       }
+  //     }
+  //   } else {
+  //     notify('Please enter the amount', 'error');
+  //   }
+  //   setIsApproving(false);
+  // };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -311,7 +309,6 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
             step: 'success',
           });
           setCanUnstake(false);
-          setCanApprove(false);
         } else {
           setStatusData({ transactionHash, step: 'failed', retry: true });
         }
@@ -336,7 +333,7 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
     }
     if (+amount === 0) {
       setReward('0');
-      setCanApprove(false);
+      // setCanApprove(false);
       setCanUnstake(false);
     } else if (stMaticTokenRPC && +amount > 0) {
       stMaticTokenRPC
@@ -344,7 +341,7 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
         .then(([res]) => {
           setReward(formatBalance(res));
         });
-      checkAllowance(amount);
+      checkBalance(amount);
     }
 
     setEnteredAmount(amount);
@@ -394,19 +391,14 @@ const Unstake: FC<{ changeTab: (tab: string) => void }> = ({ changeTab }) => {
             }
             label="Amount"
             value={enteredAmount}
-            disabled={isSubmitting || isApproving}
+            disabled={isSubmitting}
           />
         </InputWrapper>
         <SubmitOrConnect
-          isUnlocking={isApproving}
-          isSubmitting={isSubmitting}
-          unlock={handleApprove}
-          unlockLabel="Unlock tokens"
           submitLabel="Unstake"
+          isSubmitting={isSubmitting}
           submit={handleSubmit}
-          fullwidth={false}
           disabledSubmit={!canUnstake}
-          disabledUnlock={!canApprove}
         />
       </form>
       <DataTable>
