@@ -1,6 +1,6 @@
 FROM node:14-alpine
 
-RUN apk add --no-cache git=2.34.2-r0 curl=7.80.0-r0
+RUN apk add --no-cache git=2.34.2-r0 curl=7.80.0-r1
 WORKDIR /app
 COPY package.json yarn.lock ./
 
