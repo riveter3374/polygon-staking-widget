@@ -28,8 +28,11 @@ const rpc: Rpc = async (req, res) => {
     };
     const requested = await fetchRPC(chainId, options);
 
-    const responded = await requested.json();
-    res.status(requested.status).json(responded);
+    res.setHeader(
+      'Content-Type',
+      requested.headers.get('Content-Type') ?? 'application/json',
+    );
+    res.status(requested.status).send(requested.body);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
