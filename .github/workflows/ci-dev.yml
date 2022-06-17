@@ -1,13 +1,10 @@
 name: CI Dev
 
 on:
-  workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - develop
-    paths-ignore:
-      - '.github/**'
-
+      - master
+      
 jobs:
 # test:
 #   ...
@@ -18,11 +15,3 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3.0.1
-
-      - name: Testnet deploying
-        run: .github/dispatch_workflow.py
-        env:
-          APP_ID: ${{ secrets.APP_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          TARGET_REPO: "${{ secrets.TARGET_REPO }}"
-          TARGET_WORKFLOW: 'deploy_testnet_polygon_widget.yaml'
